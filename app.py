@@ -87,4 +87,4 @@ if st.button("Initiate Sovereign Cloud Audit"):
                     st.error(f"Audit failure for {file_name}: {e}")
 
 st.markdown("---")
-st.caption("Omni-Audit Agent | Powering Secure AI/ML Development at Bennett University")
+st.caption("Omni-Audit Agent | Powering Secure AI/ML Developed by Anant Singh")
