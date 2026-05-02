@@ -1,7 +1,5 @@
-```text
-    streamlit
-    langchain-google-genai
-    langchain
-    langchain-core
-    python-dotenv
-    ```
+streamlit
+langchain-google-genai
+langchain
+langchain-core
+python-dotenv
