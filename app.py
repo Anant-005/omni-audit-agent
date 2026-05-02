@@ -8,28 +8,25 @@ from langchain_core.prompts import PromptTemplate
 load_dotenv()
 
 # 1. Page Configuration (Professional UI)
-st.set_page_config(page_title="Omni-Audit Scanner", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Omni-Audit Web", page_icon="🛡️", layout="wide")
 
-# Custom CSS for a clean, professional corporate look
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
-    h1, h2, h3 { color: #2c3e50; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    .stButton>button { background-color: #0056b3; color: white; border-radius: 4px; }
+    h1, h2, h3 { color: #2c3e50; font-family: 'Segoe UI', sans-serif; }
+    .stButton>button { background-color: #0056b3; color: white; width: 100%; border-radius: 4px; border: none; height: 3em;}
     .stButton>button:hover { background-color: #004494; color: white; }
-    .stTextInput>div>div>input { border: 1px solid #ced4da; border-radius: 4px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Setup Gemini Model
+# 2. Setup Gemini 2.5 Flash
 try:
-    # Using Gemini 2.5 Flash for optimal reasoning and speed
+    # Model pulls GOOGLE_API_KEY from Streamlit Secrets automatically in cloud
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
 except Exception as e:
-    st.error(f"Failed to initialize Gemini API. Check your .env file. Error: {e}")
+    st.error("Missing API Key. Add GOOGLE_API_KEY to your Streamlit Secrets.")
 
-# 3. Define the LangChain LCEL Pipeline
-# This replaces the fragile Agent wrappers with a robust, modern LangChain structure
+# 3. LangChain LCEL Audit Logic
 audit_prompt = PromptTemplate.from_template(
     """
     You are a Senior Security Auditor. Review the following code file named '{file_name}'.
@@ -39,61 +36,55 @@ audit_prompt = PromptTemplate.from_template(
     
     Perform a strict, professional security audit:
     1. Identify hardcoded API keys, secrets, or database credentials.
-    2. Check for insecure coding practices (e.g., eval(), shell=True, unparameterized queries).
+    2. Check for insecure coding practices (e.g., eval(), shell=True).
     3. Assign a Risk Level: [Critical, High, Medium, Low, Safe].
-    4. Provide immediate remediation steps if vulnerabilities are found.
+    4. Provide immediate remediation steps.
     
-    If the file is clean, respond exactly with: "Status: Secure. No vulnerabilities detected."
     Keep the output structured using markdown.
     """
 )
 
-# The modern LCEL Chain: Prompt -> LLM
 audit_chain = audit_prompt | llm
 
 # 4. Streamlit UI Design
-st.title("🛡️ Omni-Audit: Automated Security Scanner")
-st.markdown("Scan local repositories for exposed credentials and insecure coding patterns using LangChain and Gemini.")
-st.markdown("---")
+st.title("🛡️ Omni-Audit: Web Security Agent")
+st.markdown("### Autonomous Intelligence for Secure Code Deployment")
 
-# Input for the local directory path
-target_path = st.text_input("Target Directory Path:", placeholder="e.g., C:/Users/YourName/Desktop/Project")
+# --- UPDATED TEXTBOX / UPLOADER WITH FILE TYPES ---
+uploaded_files = st.file_uploader(
+    "Upload project files for audit (Supported: .py, .js, .ts, .env, .json, .yaml, .txt)", 
+    accept_multiple_files=True,
+    help="Drag and drop your code files here to scan for credentials and vulnerabilities."
+)
 
-if st.button("Run Security Audit"):
-    if target_path and os.path.exists(target_path):
-        # Identify relevant files to scan
-        valid_extensions = ('.py', '.js', '.env', '.json', '.yaml', '.yml', '.txt')
-        files_to_scan = [os.path.join(target_path, f) for f in os.listdir(target_path) 
-                         if f.endswith(valid_extensions)]
-        
-        if not files_to_scan:
-            st.warning("No scannable code or config files found in the specified directory.")
-        else:
-            st.info(f"Scan initialized. Analyzing {len(files_to_scan)} files...")
-            st.markdown("---")
-
-            # Audit Loop
-            for file_path in files_to_scan:
-                file_name = os.path.basename(file_path)
-                
-                with st.expander(f"📄 Audit Report: {file_name}", expanded=True):
-                    try:
-                        # Read the file natively
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            file_content = f.read()
-                        
-                        # Execute the LangChain pipeline
-                        response = audit_chain.invoke({
-                            "file_name": file_name,
-                            "file_content": file_content
-                        })
-                        
-                        # Display the AI's response
-                        st.markdown(response.content)
-                        
-                    except UnicodeDecodeError:
-                        st.error("Error: Could not read file. Ensure it is a valid text/code file.")
-                    except Exception as e:
-                        st.error(f"Audit failed for {file_name}: {e}")
+if st.button("Initiate Sovereign Cloud Audit"):
+    if not uploaded_files:
+        st.warning("Protocol Warning: Please upload at least one file to initiate the scan.")
     else:
-        st.error("Invalid directory path. Please check the path and try again.")
+        st.info(f"Audit in progress. Analyzing {len(uploaded_files)} files...")
+        st.markdown("---")
+        
+        for uploaded_file in uploaded_files:
+            file_name = uploaded_file.name
+            
+            with st.expander(f"📄 Audit Report: {file_name}", expanded=True):
+                try:
+                    # Extract text content from the uploaded file
+                    file_bytes = uploaded_file.getvalue()
+                    stringio = file_bytes.decode("utf-8")
+                    
+                    # Execute the Audit Chain
+                    response = audit_chain.invoke({
+                        "file_name": file_name,
+                        "file_content": stringio
+                    })
+                    
+                    st.markdown(response.content)
+                    
+                except UnicodeDecodeError:
+                    st.error(f"Error: {file_name} appears to be a binary file. Only text-based code files can be audited.")
+                except Exception as e:
+                    st.error(f"Audit failure for {file_name}: {e}")
+
+st.markdown("---")
+st.caption("Omni-Audit Agent | Powering Secure AI/ML Development at Bennett University")
